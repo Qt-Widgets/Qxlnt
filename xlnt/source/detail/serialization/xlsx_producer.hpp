@@ -1,4 +1,4 @@
-// Copyright (c) 2014-2018 Thomas Fussell
+// Copyright (c) 2014-2020 Thomas Fussell
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,6 +30,7 @@
 
 #include <detail/constants.hpp>
 #include <detail/external/include_libstudxml.hpp>
+#include <xlnt/utils/numeric.hpp>
 
 namespace xml {
 class serializer;
@@ -45,6 +46,7 @@ class fill;
 class font;
 class path;
 class relationship;
+class rich_text;
 class streaming_workbook_writer;
 class variant;
 class workbook;
@@ -122,7 +124,8 @@ private:
 	// Sheet Relationship Target Parts
 
 	void write_comments(const relationship &rel, worksheet ws, const std::vector<cell_reference> &cells);
-	void write_vml_drawings(const relationship &rel, worksheet ws, const std::vector<cell_reference> &cells);
+    void write_vml_drawings(const relationship &rel, worksheet ws, const std::vector<cell_reference> &cells);
+    void write_drawings(const relationship &rel, worksheet ws);
 
 	// Other Parts
 
@@ -138,7 +141,7 @@ private:
 	/// we're trying to match.
 	/// </summary>
 	std::string write_bool(bool boolean) const;
-    
+
     void write_relationships(const std::vector<xlnt::relationship> &relationships, const path &part);
     void write_color(const xlnt::color &color);
     void write_border(const xlnt::border &b);
@@ -146,12 +149,13 @@ private:
 	void write_font(const xlnt::font &f);
     void write_table_styles();
     void write_colors(const std::vector<xlnt::color> &colors);
+    void write_rich_text(const std::string &ns, const xlnt::rich_text &text);
 
     template<typename T>
-    void write_element(const std::string &ns, const std::string &name, T value)
+    void write_element(const std::string &ns, const std::string &name, T value, bool preserve_whitespace = false)
     {
         write_start_element(ns, name);
-        write_characters(value);
+        write_characters(value, preserve_whitespace);
         write_end_element(ns, name);
     }
 
@@ -192,7 +196,7 @@ private:
 	/// A reference to the workbook which is the object of read/write operations.
 	/// </summary>
 	const workbook &source_;
-    
+
 	std::unique_ptr<ozstream> archive_;
     std::unique_ptr<xml::serializer> current_part_serializer_;
     std::unique_ptr<std::streambuf> current_part_streambuf_;
@@ -205,6 +209,7 @@ private:
     detail::cell_impl *current_cell_;
 
     detail::worksheet_impl *current_worksheet_;
+    detail::number_serialiser converter_;
 };
 
 } // namespace detail
